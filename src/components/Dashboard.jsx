@@ -15,6 +15,33 @@ export default function Dashboard({ submissions = [], onExit }) {
     setLocalSubmissions(submissions);
   }, [submissions]);
 
+  // Question mapping helper to format raw JSON answers into human-readable text
+  const questionMap = {
+    q1: {
+      title: "1. How often do you feel fatigued during daily activities?",
+      options: { 0: "Rarely / Never", 1: "Sometimes", 2: "Frequently" }
+    },
+    q2: {
+      title: "2. Do you experience joint discomfort or muscle stiffness when travelling?",
+      options: { 0: "No discomfort", 1: "Mild stiffness", 2: "Significant pain" }
+    },
+    q3: {
+      title: "3. How would you rate your daily hydration and nutrition habits?",
+      options: { 0: "Balanced & Hydrated", 1: "Needs Improvement", 2: "Poor / Irregular" }
+    },
+    q4: {
+      title: "4. Do you have any existing medical conditions or take daily medication?",
+      options: { 0: "None / Fully Managed", 1: "Under Routine Care", 2: "Requires Active Assistance" }
+    }
+  };
+
+  const formatAnswerText = (key, val) => {
+    const question = questionMap[key];
+    if (!question) return { title: `Question (${key})`, answer: `Choice ${val}` };
+    const optionText = question.options[val] !== undefined ? question.options[val] : `Option ${val}`;
+    return { title: question.title, answer: optionText };
+  };
+
   const totalSubmissions = localSubmissions.length;
   
   const healthCheckInCount = localSubmissions.filter(s => 
@@ -37,9 +64,9 @@ export default function Dashboard({ submissions = [], onExit }) {
   ).length;
 
   const getTriageDisplay = (route) => {
-    if (route === 'ROUTE_A' || route === 'PRIORITY_ASSIST') return 'Health Check-In Recommended';
-    if (route === 'ROUTE_B' || route === 'GENTLE_CARE') return 'Pre-Flight Check Recommended';
-    return 'Ready for Your Journey';
+    if (route === 'ROUTE_A' || route === 'PRIORITY_ASSIST') return 'Health Check-In';
+    if (route === 'ROUTE_B' || route === 'GENTLE_CARE') return 'Pre-Flight Check';
+    return 'Ready to Fly';
   };
 
   const filteredSubmissions = localSubmissions.filter(item => {
@@ -283,20 +310,20 @@ export default function Dashboard({ submissions = [], onExit }) {
                       </span>
                     </td>
 
-                    <td style={{ padding: '0.65rem 0.85rem' }}>
+                    <td style={{ padding: '0.65rem 0.85rem', whiteSpace: 'nowrap' }}>
                       {isRouteA && (
-                        <span style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.725rem', fontWeight: 800 }}>
-                          Health Check-In Recommended
+                        <span style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', padding: '0.25rem 0.65rem', borderRadius: '99px', fontSize: '0.725rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#dc2626' }}></span> Health Check-In
                         </span>
                       )}
                       {isRouteB && (
-                        <span style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#d97706', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.725rem', fontWeight: 800 }}>
-                          Pre-Flight Check Recommended
+                        <span style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#b45309', padding: '0.25rem 0.65rem', borderRadius: '99px', fontSize: '0.725rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d97706' }}></span> Pre-Flight Check
                         </span>
                       )}
                       {!isRouteA && !isRouteB && (
-                        <span style={{ background: '#eef4fc', border: '1px solid #bfdbfe', color: '#1d4ed8', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.725rem', fontWeight: 800 }}>
-                          Ready for Your Journey
+                        <span style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', padding: '0.25rem 0.65rem', borderRadius: '99px', fontSize: '0.725rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#2563eb' }}></span> Ready to Fly
                         </span>
                       )}
                     </td>
@@ -369,7 +396,7 @@ export default function Dashboard({ submissions = [], onExit }) {
         </div>
       </div>
 
-      {/* DETAIL MODAL */}
+      {/* DETAIL MODAL WITH HUMAN READABLE RESPONSES */}
       {selectedSubmission && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', zIndex: 200 }}>
           <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.5rem', maxWidth: '480px', width: '100%', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', maxHeight: '85vh', overflowY: 'auto' }}>
@@ -390,10 +417,22 @@ export default function Dashboard({ submissions = [], onExit }) {
 
               {selectedSubmission.answers && (
                 <div style={{ marginTop: '0.5rem', paddingTop: '0.65rem', borderTop: '1px solid #f1f5f9' }}>
-                  <strong style={{ display: 'block', marginBottom: '0.5rem' }}>Assessment Responses:</strong>
-                  <pre style={{ background: '#f8fafc', padding: '0.65rem', borderRadius: '8px', fontSize: '0.725rem', overflowX: 'auto', border: '1px solid #e2e8f0' }}>
-                    {JSON.stringify(selectedSubmission.answers, null, 2)}
-                  </pre>
+                  <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#0f172a' }}>Assessment Responses:</strong>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {Object.entries(selectedSubmission.answers).map(([key, val]) => {
+                      const formatted = formatAnswerText(key, val);
+                      return (
+                        <div key={key} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.6rem 0.75rem' }}>
+                          <div style={{ fontSize: '0.725rem', fontWeight: 700, color: '#475569', marginBottom: '0.2rem' }}>
+                            {formatted.title}
+                          </div>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#1e40af' }}>
+                            → {formatted.answer}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
