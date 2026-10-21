@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { QUESTIONS } from '../data/questions';
 import { evaluateAssessment } from '../utils/routingEngine';
+
+const CEBPAC_MASCOT_URL = "https://cdn.prod.website-files.com/66f107521fe1651eb4dc9adb/6ad819801e9a9f2ca441fc73_252-2527234_airport-ticket-clipart.png";
 
 export default function AssessmentForm({ onComplete }) {
   const [currentStep, setCurrentStep] = useState(0); // 0: Privacy, 1: Info, 2..5: Questions
@@ -8,6 +11,7 @@ export default function AssessmentForm({ onComplete }) {
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [answers, setAnswers] = useState({});
   const [modalMessage, setModalMessage] = useState(null);
+  const [isTakingOff, setIsTakingOff] = useState(false);
 
   const questionStepsCount = QUESTIONS.length + 1; // 1 (Details) + 4 Questions = 5 Steps
   const activeQuestionStep = currentStep;
@@ -26,7 +30,17 @@ export default function AssessmentForm({ onComplete }) {
         showAlert("Please accept the Data Privacy Notice in compliance with Philippine Law (R.A. 10173) to proceed.");
         return;
       }
-    } else if (currentStep === 1) {
+      
+      // Trigger Slow Gliding Takeoff Animation before advancing to Info step
+      setIsTakingOff(true);
+      setTimeout(() => {
+        setIsTakingOff(false);
+        setCurrentStep(1);
+      }, 2200);
+      return;
+    } 
+    
+    if (currentStep === 1) {
       if (!participant.name.trim() || !participant.email.trim() || !participant.phone.trim()) {
         showAlert("Please fill in your Full Name, Email address, and Mobile Number.");
         return;
@@ -48,6 +62,7 @@ export default function AssessmentForm({ onComplete }) {
         return;
       }
     }
+    
     setCurrentStep(prev => prev + 1);
   };
 
@@ -68,23 +83,97 @@ export default function AssessmentForm({ onComplete }) {
 
     const evaluation = evaluateAssessment(answers);
     const newRecord = {
-        id: `SUB-${Math.floor(1000 + Math.random() * 9000)}`,
-        name: participant.name,
-        email: participant.email,
-        phone: participant.phone,
-        privacyConsent: true,
-        date: new Date().toISOString().replace('T', ' ').substring(0, 16),
-        ...evaluation,
-        answers: answers, // <--- Ensure answers are saved here
-        requestedFollowUp: false
+      id: `SUB-${Math.floor(1000 + Math.random() * 9000)}`,
+      name: participant.name,
+      email: participant.email,
+      phone: participant.phone,
+      privacyConsent: true,
+      date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      ...evaluation,
+      answers: answers,
+      requestedFollowUp: false
     };
 
-    onComplete(newRecord);
+    // Trigger Slow Gliding Takeoff Animation before displaying Result Screen
+    setIsTakingOff(true);
+    setTimeout(() => {
+      setIsTakingOff(false);
+      onComplete(newRecord);
+    }, 2200);
   };
 
   return (
     <div style={{ background: '#fff', borderRadius: '20px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden' }}>
       
+      {/* CEBU PACIFIC MASCOT SLOW GLIDE ANIMATION OVERLAY */}
+      <AnimatePresence>
+        {isTakingOff && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundColor: 'rgba(255, 255, 255, 0.94)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 90,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden'
+            }}
+          >
+            {/* Gentle Horizontal Wind Streams */}
+            {[-40, -15, 15, 40].map((offset, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ x: '200%', opacity: 0 }}
+                animate={{ x: '-200%', opacity: [0, 0.8, 0] }}
+                transition={{ 
+                  duration: 1.8, 
+                  delay: idx * 0.1, 
+                  repeat: Infinity, 
+                  ease: 'linear' 
+                }}
+                style={{
+                  position: 'absolute',
+                  top: `calc(50% + ${offset}px)`,
+                  width: '220px',
+                  height: '3px',
+                  background: 'linear-gradient(90deg, rgba(0,114,206,0) 0%, rgba(252,209,22,0.85) 50%, rgba(0,114,206,0) 100%)',
+                  borderRadius: '2px'
+                }}
+              />
+            ))}
+
+            {/* Slow Gliding Mascot Character */}
+            <motion.img
+              src={CEBPAC_MASCOT_URL}
+              alt="Cebu Pacific Mascot"
+              initial={{ x: '-340px', y: '0px', scale: 0.95 }}
+              animate={{ 
+                x: '340px', 
+                y: ['0px', '-8px', '0px', '8px', '0px'],
+                scale: 1.25 
+              }}
+              transition={{ 
+                x: { duration: 2.2, ease: 'easeInOut' },
+                y: { duration: 2.2, ease: 'easeInOut' },
+                scale: { duration: 2.2, ease: 'easeInOut' }
+              }}
+              style={{
+                width: '180px',
+                height: 'auto',
+                filter: 'drop-shadow(0 12px 20px rgba(252, 209, 22, 0.45))'
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL ALERT */}
       {modalMessage && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', zIndex: 100 }}>
           <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.5rem', maxWidth: '340px', width: '100%', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.15)' }}>
@@ -96,6 +185,7 @@ export default function AssessmentForm({ onComplete }) {
         </div>
       )}
 
+      {/* PROGRESS BAR */}
       {currentStep > 0 && (
         <div style={{ marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '0.5rem' }}>
@@ -110,6 +200,7 @@ export default function AssessmentForm({ onComplete }) {
 
       <form onSubmit={handleSubmit}>
         
+        {/* STEP 0: PRIVACY CONSENT */}
         {currentStep === 0 && (
           <div>
             <div style={{ 
@@ -122,9 +213,9 @@ export default function AssessmentForm({ onComplete }) {
               boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
             }}>
               <img 
-                src="https://cdn.prod.website-files.com/66f107521fe1651eb4dc9adb/6ad704f213bec3deef0469dd_Frame%201171274967.png" 
-                alt="Travel & Wellness Cover 500x500" 
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                src="https://cdn.prod.website-files.com/66f107521fe1651eb4dc9adb/6aa104b9b641ff2523661d82_mlmc_new%204.png" 
+                alt="Travel & Wellness Cover" 
+                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
               />
             </div>
 
@@ -151,6 +242,7 @@ export default function AssessmentForm({ onComplete }) {
           </div>
         )}
 
+        {/* STEP 1: PARTICIPANT INFORMATION */}
         {currentStep === 1 && (
           <div>
             <div style={{ textAlign: 'center', margin: '0.5rem 0 1.25rem 0' }}>
@@ -176,6 +268,7 @@ export default function AssessmentForm({ onComplete }) {
           </div>
         )}
 
+        {/* STEPS 2..N: QUESTIONS */}
         {currentStep >= 2 && (
           <div>
             {(() => {
@@ -207,12 +300,21 @@ export default function AssessmentForm({ onComplete }) {
           </div>
         )}
 
+        {/* BOTTOM BUTTON BAR */}
         <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
-          {currentStep > 0 && <button type="button" className="btn-secondary" onClick={handlePrev}>← Back</button>}
+          {currentStep > 0 && <button type="button" className="btn-secondary" onClick={handlePrev} disabled={isTakingOff}>← Back</button>}
           {currentStep < questionStepsCount ? (
-            <button type="button" className="btn-dark" style={{ flex: 1 }} onClick={handleNext}>Next Step →</button>
+            <button 
+              type="button" 
+              className="btn-dark" 
+              style={{ flex: 1 }} 
+              onClick={handleNext}
+              disabled={isTakingOff}
+            >
+              {currentStep === 0 ? "Let's start" : "Next Step →"}
+            </button>
           ) : (
-            <button type="submit" className="btn-dark" style={{ flex: 1 }}>Complete Check ✨</button>
+            <button type="submit" className="btn-dark" style={{ flex: 1 }} disabled={isTakingOff}>Complete Check ✨</button>
           )}
         </div>
 

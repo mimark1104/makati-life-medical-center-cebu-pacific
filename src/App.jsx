@@ -4,37 +4,7 @@ import AssessmentForm from './components/AssessmentForm';
 import ResultScreen from './components/ResultScreen';
 import AdminAuth from './components/AdminAuth';
 import Dashboard from './components/Dashboard';
-
-const INITIAL_SUBMISSIONS = [
-  {
-    id: 'SUB-1001',
-    name: 'Maria Santos',
-    email: 'maria@example.com',
-    phone: '+63 917 123 4567',
-    privacyConsent: true,
-    date: '2026-10-20 10:00',
-    counts: { 0: 0, 1: 0, 2: 2 },
-    route: 'ROUTE_A',
-    priority: 'HIGH FOLLOW-UP PRIORITY',
-    recommendation: 'Health Check-In / GP Consultation Recommended',
-    requestedFollowUp: true,
-    answers: { 1: 2, 2: 2, 3: 1, 4: 1 }
-  },
-  {
-    id: 'SUB-1002',
-    name: 'Juan Dela Cruz',
-    email: 'juan@example.com',
-    phone: '+63 918 987 6543',
-    privacyConsent: true,
-    date: '2026-10-20 11:15',
-    counts: { 0: 3, 1: 1, 2: 0 },
-    route: 'ROUTE_C',
-    priority: 'LOW / OPTIONAL',
-    recommendation: 'Routine Wellness Encouragement & Optional Check-Up',
-    requestedFollowUp: false,
-    answers: { 1: 0, 2: 0, 3: 0, 4: 1 }
-  }
-];
+import { supabase } from './services/supabaseClient';
 
 export default function App() {
   const [view, setView] = useState('assessment');
@@ -44,14 +14,43 @@ export default function App() {
     return localStorage.getItem('makati_admin_auth') === 'true';
   });
 
-  const [submissions, setSubmissions] = useState(() => {
-    const saved = localStorage.getItem('makati_wellness_submissions');
-    return saved ? JSON.parse(saved) : INITIAL_SUBMISSIONS;
-  });
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch initial records from Supabase on load
   useEffect(() => {
-    localStorage.setItem('makati_wellness_submissions', JSON.stringify(submissions));
-  }, [submissions]);
+    const fetchSubmissions = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('submissions')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const formatted = (data || []).map(row => ({
+          id: row.id,
+          date: row.date,
+          name: row.name,
+          email: row.email,
+          phone: row.phone,
+          privacyConsent: row.privacy_consent,
+          route: row.route,
+          counts: row.counts,
+          answers: row.answers,
+          requestedFollowUp: row.requested_follow_up
+        }));
+
+        setSubmissions(formatted);
+      } catch (err) {
+        console.error('Error loading submissions from Supabase:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubmissions();
+  }, []);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -81,16 +80,53 @@ export default function App() {
     setView('assessment');
   };
 
-  const handleAssessmentComplete = (newRecord) => {
+  const handleAssessmentComplete = async (newRecord) => {
     setCurrentResult(newRecord);
-    setSubmissions(prev => [newRecord, ...prev]);
     setView('result');
+
+    try {
+      const { error } = await supabase.from('submissions').insert([
+        {
+          id: newRecord.id,
+          date: newRecord.date,
+          name: newRecord.name,
+          email: newRecord.email,
+          phone: newRecord.phone,
+          privacy_consent: newRecord.privacyConsent,
+          route: newRecord.route,
+          counts: newRecord.counts,
+          answers: newRecord.answers,
+          requested_follow_up: newRecord.requestedFollowUp
+        }
+      ]);
+
+      if (error) {
+        console.error('Error saving submission to Supabase:', error.message);
+      } else {
+        setSubmissions(prev => [newRecord, ...prev]);
+      }
+    } catch (err) {
+      console.error('Unexpected error saving to Supabase:', err);
+    }
   };
 
-  const handleFollowUpRequest = (subId) => {
+  const handleFollowUpRequest = async (subId) => {
     setSubmissions(prev => prev.map(s => s.id === subId ? { ...s, requestedFollowUp: true } : s));
     if (currentResult && currentResult.id === subId) {
       setCurrentResult(prev => ({ ...prev, requestedFollowUp: true }));
+    }
+
+    try {
+      const { error } = await supabase
+        .from('submissions')
+        .update({ requested_follow_up: true })
+        .eq('id', subId);
+
+      if (error) {
+        console.error('Error updating follow-up status in Supabase:', error.message);
+      }
+    } catch (err) {
+      console.error('Unexpected error updating follow-up:', err);
     }
   };
 
@@ -104,14 +140,20 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
-      <Navbar onRestart={restartAssessment} />
+      
+      {/* NAVBAR ONLY SHOWS ON DASHBOARD VIEW */}
+      {isDashboardView && <Navbar onRestart={restartAssessment} />}
 
       <main style={{ 
         flex: 1, 
         width: '100%', 
         maxWidth: isDashboardView ? '1280px' : '500px', 
         margin: '0 auto', 
-        padding: isDashboardView ? '2rem 1.5rem' : '1rem' 
+        padding: isDashboardView ? '2rem 1.5rem' : '1rem',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center', // Centers vertically
+        alignItems: 'center'      // Centers horizontally
       }}>
         {view === 'assessment' && (
           <AssessmentForm onComplete={handleAssessmentComplete} />

@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "framer-motion": "^14.4.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

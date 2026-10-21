@@ -1,11 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QUESTIONS } from '../data/questions';
+import { supabase } from '../services/supabaseClient';
 
-export default function Dashboard({ submissions = [], onExit }) {
+export default function Dashboard({ onExit }) {
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState('');
+  
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [followUpFilter, setFollowUpFilter] = useState('ALL');
   const [selected, setSelected] = useState(null);
+
+  // Fetch submissions from Supabase Database
+  const fetchSubmissions = async () => {
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      const { data, error } = await supabase
+        .from('submissions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Map database columns to component properties
+      const formatted = (data || []).map(row => ({
+        id: row.id,
+        date: row.date,
+        name: row.name,
+        email: row.email,
+        phone: row.phone,
+        privacyConsent: row.privacy_consent,
+        route: row.route,
+        counts: row.counts,
+        answers: row.answers,
+        requestedFollowUp: row.requested_follow_up
+      }));
+
+      setSubmissions(formatted);
+    } catch (err) {
+      console.error('Error fetching census data:', err);
+      setErrorMsg('Failed to load submissions from database. Please check your Supabase credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete individual submission by ID
+  const handleDeleteSubmission = async (id, name) => {
+    const confirmed = window.confirm(`Are you sure you want to delete the submission for ${name || 'this participant'} (ID: #${id})? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      const { error } = await supabase
+        .from('submissions')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Remove from UI state immediately
+      setSubmissions(prev => prev.filter(item => item.id !== id));
+
+      // Close modal if deleting selected record
+      if (selected && selected.id === id) {
+        setSelected(null);
+      }
+    } catch (err) {
+      console.error('Error deleting record:', err);
+      alert('Failed to delete submission: ' + err.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchSubmissions();
+  }, []);
 
   const getStatusBadge = (route) => {
     switch (route) {
@@ -135,10 +205,18 @@ export default function Dashboard({ submissions = [], onExit }) {
             <span>WELLNESS ASSESSMENT</span>
           </div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>Participant Lead Census</h2>
-          <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.15rem' }}>Makati Life Medical Center — Live Triage Analytics & Export</p>
+          <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.15rem' }}>Makati Life Medical Center — Live Triage Analytics & Database Sync</p>
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <button 
+            type="button"
+            className="btn-secondary"
+            style={{ padding: '0.65rem 1rem', fontSize: '0.875rem', borderRadius: '10px', background: '#f1f5f9', color: '#1e293b' }}
+            onClick={fetchSubmissions}
+          >
+            🔄 Refresh Data
+          </button>
           <button 
             type="button"
             className="btn-dark" 
@@ -158,40 +236,46 @@ export default function Dashboard({ submissions = [], onExit }) {
         </div>
       </div>
 
+      {errorMsg && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', padding: '1rem', borderRadius: '12px', fontSize: '0.875rem' }}>
+          {errorMsg}
+        </div>
+      )}
+
       {/* METRIC STATS CARDS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
         <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
           <div style={{ fontSize: '0.725rem', fontWeight: 700, color: '#64748b', letterSpacing: '0.05em' }}>TOTAL SUBMISSIONS</div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', marginTop: '0.35rem' }}>{totalSubmissions}</div>
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', marginTop: '0.35rem' }}>{loading ? '...' : totalSubmissions}</div>
           <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.2rem' }}>Participants evaluated</div>
         </div>
 
         <div style={{ background: '#ffffff', border: '1px solid #fecaca', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
           <div style={{ fontSize: '0.725rem', fontWeight: 700, color: '#dc2626', letterSpacing: '0.05em' }}>HEALTH CHECK-IN</div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#dc2626', marginTop: '0.35rem' }}>{routeACount}</div>
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#dc2626', marginTop: '0.35rem' }}>{loading ? '...' : routeACount}</div>
           <div style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '0.2rem' }}>High Priority (Route A)</div>
         </div>
 
         <div style={{ background: '#ffffff', border: '1px solid #fde68a', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
           <div style={{ fontSize: '0.725rem', fontWeight: 700, color: '#d97706', letterSpacing: '0.05em' }}>PRE-FLIGHT CHECK</div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#d97706', marginTop: '0.35rem' }}>{routeBCount}</div>
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#d97706', marginTop: '0.35rem' }}>{loading ? '...' : routeBCount}</div>
           <div style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '0.2rem' }}>Standard Priority (Route B)</div>
         </div>
 
         <div style={{ background: '#ffffff', border: '1px solid #b6d3f2', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
           <div style={{ fontSize: '0.725rem', fontWeight: 700, color: '#174b85', letterSpacing: '0.05em' }}>READY FOR JOURNEY</div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#174b85', marginTop: '0.35rem' }}>{routeCCount}</div>
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#174b85', marginTop: '0.35rem' }}>{loading ? '...' : routeCCount}</div>
           <div style={{ fontSize: '0.75rem', color: '#3b82f6', marginTop: '0.2rem' }}>Low / Routine (Route C)</div>
         </div>
 
         <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
           <div style={{ fontSize: '0.725rem', fontWeight: 700, color: '#16a34a', letterSpacing: '0.05em' }}>FOLLOW-UP REQUESTS</div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#16a34a', marginTop: '0.35rem' }}>{requestedFollowUpCount}</div>
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#16a34a', marginTop: '0.35rem' }}>{loading ? '...' : requestedFollowUpCount}</div>
           <div style={{ fontSize: '0.75rem', color: '#22c55e', marginTop: '0.2rem' }}>Opted-in for contact</div>
         </div>
       </div>
 
-      {/* FULL CENSUS DATA TABLE & CONTROLS */}
+      {/* CENSUS DATA TABLE & CONTROLS */}
       <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
         
         {/* Search & Filter Toolbar */}
@@ -216,7 +300,7 @@ export default function Dashboard({ submissions = [], onExit }) {
               <span style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '0.85rem' }}>🔍</span>
             </div>
 
-            {/* Custom Wrapper for Status Filter with Inset Chevron */}
+            {/* Custom Wrapper for Status Filter */}
             <div style={{ position: 'relative', display: 'inline-block' }}>
               <select 
                 value={statusFilter} 
@@ -241,20 +325,10 @@ export default function Dashboard({ submissions = [], onExit }) {
                 <option value="ROUTE_B">Pre-Flight Wellness Check (Route B)</option>
                 <option value="ROUTE_C">Ready for Journey (Route C)</option>
               </select>
-              <span style={{ 
-                position: 'absolute', 
-                right: '1rem', 
-                top: '50%', 
-                transform: 'translateY(-50%)', 
-                pointerEvents: 'none', 
-                color: '#64748b', 
-                fontSize: '0.7rem' 
-              }}>
-                ▼
-              </span>
+              <span style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748b', fontSize: '0.7rem' }}>▼</span>
             </div>
 
-            {/* Custom Wrapper for Follow-Up Filter with Inset Chevron */}
+            {/* Custom Wrapper for Follow-Up Filter */}
             <div style={{ position: 'relative', display: 'inline-block' }}>
               <select 
                 value={followUpFilter} 
@@ -278,17 +352,7 @@ export default function Dashboard({ submissions = [], onExit }) {
                 <option value="YES">Requested Follow-Up Only</option>
                 <option value="NO">No Follow-Up Requested</option>
               </select>
-              <span style={{ 
-                position: 'absolute', 
-                right: '1rem', 
-                top: '50%', 
-                transform: 'translateY(-50%)', 
-                pointerEvents: 'none', 
-                color: '#64748b', 
-                fontSize: '0.7rem' 
-              }}>
-                ▼
-              </span>
+              <span style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748b', fontSize: '0.7rem' }}>▼</span>
             </div>
           </div>
 
@@ -314,10 +378,16 @@ export default function Dashboard({ submissions = [], onExit }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="10" style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
+                    Loading participant database records...
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan="10" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
-                    No participant records match your active search and filter criteria.
+                    No participant records found in Supabase database matching your filter criteria.
                   </td>
                 </tr>
               ) : (
@@ -375,14 +445,33 @@ export default function Dashboard({ submissions = [], onExit }) {
                         </span>
                       </td>
                       <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
-                        <button 
-                          type="button"
-                          className="btn-secondary" 
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.775rem', borderRadius: '8px', cursor: 'pointer' }} 
-                          onClick={() => setSelected(sub)}
-                        >
-                          View Details
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                          <button 
+                            type="button"
+                            className="btn-secondary" 
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.775rem', borderRadius: '8px', cursor: 'pointer' }} 
+                            onClick={() => setSelected(sub)}
+                          >
+                            View Details
+                          </button>
+                          <button 
+                            type="button"
+                            style={{ 
+                              padding: '0.4rem 0.6rem', 
+                              fontSize: '0.775rem', 
+                              borderRadius: '8px', 
+                              cursor: 'pointer',
+                              background: '#fef2f2',
+                              color: '#dc2626',
+                              border: '1px solid #fca5a5',
+                              fontWeight: 600
+                            }} 
+                            onClick={() => handleDeleteSubmission(sub.id, sub.name)}
+                            title="Delete Submission"
+                          >
+                            🗑️
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -464,9 +553,33 @@ export default function Dashboard({ submissions = [], onExit }) {
 
             </div>
 
-            <button type="button" className="btn-dark" style={{ width: '100%', padding: '0.85rem' }} onClick={() => setSelected(null)}>
-              Close Details
-            </button>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button 
+                type="button" 
+                style={{ 
+                  padding: '0.85rem 1rem', 
+                  borderRadius: '10px', 
+                  border: '1px solid #fca5a5', 
+                  background: '#fef2f2', 
+                  color: '#dc2626', 
+                  fontWeight: 700, 
+                  cursor: 'pointer',
+                  fontSize: '0.85rem'
+                }} 
+                onClick={() => handleDeleteSubmission(selected.id, selected.name)}
+              >
+                Delete Record
+              </button>
+              <button 
+                type="button" 
+                className="btn-dark" 
+                style={{ flex: 1, padding: '0.85rem' }} 
+                onClick={() => setSelected(null)}
+              >
+                Close Details
+              </button>
+            </div>
+
           </div>
         </div>
       )}
