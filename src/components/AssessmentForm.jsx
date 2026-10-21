@@ -227,13 +227,13 @@ export default function AssessmentForm({ onComplete }) {
             </div>
 
             <div style={{ textAlign: 'center', margin: '0 0 1rem 0' }}>
-              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a' }}>Ready for Your Journey?</h2>
-              <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '0.2rem' }}>Quick pre-flight wellness self-check</p>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#0f172a' }}>Ready for Your Journey?</h2>
+              <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '0.2rem' }}>Fit-to-Fly Health Assessment</p>
             </div>
 
             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                <span style={{ fontSize: '1.1rem' }}>🔒</span>
+                {/* <span style={{ fontSize: '1.1rem' }}>🔒</span> */}
                 <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a', letterSpacing: '0.03em' }}>DATA PRIVACY NOTICE (R.A. 10173)</span>
               </div>
               <p style={{ fontSize: '0.78rem', color: '#475569', lineHeight: '1.5', marginBottom: '1rem' }}>

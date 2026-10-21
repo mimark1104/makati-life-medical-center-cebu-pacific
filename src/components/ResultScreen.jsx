@@ -61,7 +61,7 @@ export default function ResultScreen({ result, onRestart, onRequestFollowUp }) {
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: '56px', height: '56px', background: '#fffbeb', color: '#d97706', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', margin: '0 auto 1rem auto' }}>🛡️</div>
           <span style={{ background: '#fffbeb', color: '#d97706', padding: '0.25rem 0.75rem', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 800 }}>PRE-FLIGHT ADVISORY</span>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.75rem 0 0.5rem 0' }}>Pre-Flight Wellness Check Recommended!</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.75rem 0 0.5rem 0' }}>Fit-to-Fly Health Assessment is Recommended!</h2>
           <p style={{ color: '#475569', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: '0.5rem' }}>"A few of your wellness habits may benefit from extra attention. A quick check-in could help you prepare for a healthier journey."</p>
           <p style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: '1.5rem' }}>"Want guidance on preventive check-ups or specialist consultations? We can help."</p>
 
