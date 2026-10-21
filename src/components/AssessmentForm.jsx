@@ -203,19 +203,26 @@ export default function AssessmentForm({ onComplete }) {
         {/* STEP 0: PRIVACY CONSENT */}
         {currentStep === 0 && (
           <div>
+            {/* Transparent Logo Container */}
             <div style={{ 
               width: '100%', 
               maxWidth: '320px', 
-              aspectRatio: '16 / 9', 
-              margin: '0 auto 1.25rem auto', 
-              borderRadius: '16px', 
-              overflow: 'hidden',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
+              height: '120px', 
+              margin: '0 auto 1rem auto', 
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0.25rem'
             }}>
               <img 
                 src="https://cdn.prod.website-files.com/66f107521fe1651eb4dc9adb/6aa104b9b641ff2523661d82_mlmc_new%204.png" 
-                alt="Travel & Wellness Cover" 
-                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                alt="Makati Life Medical Center" 
+                style={{ 
+                  width: '100%', 
+                  height: '100%', 
+                  objectFit: 'contain', 
+                  display: 'block' 
+                }}
               />
             </div>
 
