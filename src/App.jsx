@@ -18,17 +18,18 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   // Fetch initial records from Supabase on load
-  useEffect(() => {
-    const fetchSubmissions = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('submissions')
-          .select('*')
-          .order('created_at', { ascending: false });
+  const fetchSubmissions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('submissions')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        const formatted = (data || []).map(row => ({
+      const formatted = (data || []).map(row => {
+        const isTrue = row.requested_follow_up === true || row.requested_follow_up === 'YES' || row.requested_follow_up === 'true';
+        return {
           id: row.id,
           date: row.date,
           name: row.name,
@@ -38,17 +39,20 @@ export default function App() {
           route: row.route,
           counts: row.counts,
           answers: row.answers,
-          requestedFollowUp: row.requested_follow_up
-        }));
+          requestedFollowUp: isTrue ? 'YES' : 'NO',
+          requested_follow_up: isTrue
+        };
+      });
 
-        setSubmissions(formatted);
-      } catch (err) {
-        console.error('Error loading submissions from Supabase:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setSubmissions(formatted);
+    } catch (err) {
+      console.error('Error loading submissions from Supabase:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchSubmissions();
   }, []);
 
@@ -85,6 +89,7 @@ export default function App() {
     setView('result');
 
     try {
+      // ✅ FIXED: Correct syntax using parenthesis .from('submissions')
       const { error } = await supabase.from('submissions').insert([
         {
           id: newRecord.id,
@@ -96,14 +101,19 @@ export default function App() {
           route: newRecord.route,
           counts: newRecord.counts,
           answers: newRecord.answers,
-          requested_follow_up: newRecord.requestedFollowUp
+          requested_follow_up: false
         }
       ]);
 
       if (error) {
         console.error('Error saving submission to Supabase:', error.message);
       } else {
-        setSubmissions(prev => [newRecord, ...prev]);
+        const formattedRecord = { 
+          ...newRecord, 
+          requestedFollowUp: 'NO', 
+          requested_follow_up: false 
+        };
+        setSubmissions(prev => [formattedRecord, ...prev]);
       }
     } catch (err) {
       console.error('Unexpected error saving to Supabase:', err);
@@ -111,11 +121,24 @@ export default function App() {
   };
 
   const handleFollowUpRequest = async (subId) => {
-    setSubmissions(prev => prev.map(s => s.id === subId ? { ...s, requestedFollowUp: true } : s));
+    // 1. Immediately update UI state
+    setSubmissions(prev => 
+      prev.map(s => s.id === subId ? { 
+        ...s, 
+        requestedFollowUp: 'YES', 
+        requested_follow_up: true 
+      } : s)
+    );
+
     if (currentResult && currentResult.id === subId) {
-      setCurrentResult(prev => ({ ...prev, requestedFollowUp: true }));
+      setCurrentResult(prev => ({ 
+        ...prev, 
+        requestedFollowUp: 'YES', 
+        requested_follow_up: true 
+      }));
     }
 
+    // 2. Persist update into Supabase
     try {
       const { error } = await supabase
         .from('submissions')
@@ -124,6 +147,8 @@ export default function App() {
 
       if (error) {
         console.error('Error updating follow-up status in Supabase:', error.message);
+      } else {
+        await fetchSubmissions();
       }
     } catch (err) {
       console.error('Unexpected error updating follow-up:', err);
@@ -141,16 +166,15 @@ export default function App() {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      height: isDashboardView ? 'auto' : '100dvh', // Prevents mobile viewport expansion on assessment/result
+      height: '100dvh', 
       display: 'flex', 
       flexDirection: 'column', 
-      background: '#f8fafc',
-      overflow: isDashboardView ? 'visible' : 'hidden', // Locks page scrolling on form views
-      position: isDashboardView ? 'static' : 'fixed',
+      background: '#f8fafc', 
+      overflow: 'hidden', 
+      position: 'fixed',
       inset: 0
     }}>
       
-      {/* NAVBAR ONLY SHOWS ON DASHBOARD VIEW */}
       {isDashboardView && <Navbar onRestart={restartAssessment} />}
 
       <main style={{ 
@@ -158,12 +182,13 @@ export default function App() {
         width: '100%', 
         maxWidth: isDashboardView ? '1280px' : '500px', 
         margin: '0 auto', 
-        padding: isDashboardView ? '2rem 1.5rem' : '1rem',
+        padding: isDashboardView ? '1rem 1.5rem' : '1rem',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center', // Centers vertically
-        alignItems: 'center',      // Centers horizontally
-        boxSizing: 'border-box'
+        justifyContent: 'center', 
+        alignItems: 'center',     
+        boxSizing: 'border-box',
+        overflow: 'hidden'
       }}>
         {view === 'assessment' && (
           <div style={{ width: '100%', maxWidth: '420px' }}>

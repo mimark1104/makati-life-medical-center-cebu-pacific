@@ -9,7 +9,12 @@ export default function ResultScreen({ result, onRestart, onRequestFollowUp }) {
     );
   }
 
-  const [requested, setRequested] = useState(result?.requestedFollowUp || false);
+  const [requested, setRequested] = useState(
+    result?.requestedFollowUp === true || 
+    result?.requestedFollowUp === 'YES' || 
+    result?.requested_follow_up === true ||
+    result?.requested_follow_up === 'true'
+  );
   const [infoModal, setInfoModal] = useState(null);
 
   const handlePrimaryClick = () => {
@@ -19,7 +24,6 @@ export default function ResultScreen({ result, onRestart, onRequestFollowUp }) {
     }
   };
 
-  // Support both routing engine route names and legacy ROUTE_A/B/C
   const route = result?.route;
   const isRouteA = route === 'ROUTE_A' || route === 'PRIORITY_ASSIST';
   const isRouteB = route === 'ROUTE_B' || route === 'GENTLE_CARE';
@@ -39,17 +43,21 @@ export default function ResultScreen({ result, onRestart, onRequestFollowUp }) {
         </div>
       )}
 
+      {/* ROUTE A / PRIORITY CHECK-IN */}
       {isRouteA && (
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: '56px', height: '56px', background: '#fef2f2', color: '#dc2626', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', margin: '0 auto 1rem auto' }}>🩺</div>
           <span style={{ background: '#fef2f2', color: '#dc2626', padding: '0.25rem 0.75rem', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 800 }}>PRIORITY CHECK-IN</span>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.75rem 0 0.5rem 0' }}>Health Check-In Recommended!</h2>
-          <p style={{ color: '#475569', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>"Your wellness responses suggest that it may be helpful to speak with a healthcare professional before your next adventure."</p>
+          <h2 style={{ fontSize: '1.85rem', fontWeight: 800, margin: '1.75rem 0 1.5rem 0' }}>Health Check-In Recommended!</h2>
+          
 
           {requested ? (
-            <div style={{ background: '#eef4fc', border: '1px solid #b6d3f2', padding: '0.875rem', borderRadius: '12px', color: '#174b85', fontSize: '0.85rem', fontWeight: 600, marginBottom: '1rem' }}>✓ Your request has been received. You may speak with our GP for a health counseling.</div>
+            <div style={{ background: '#eef4fc', border: '1px solid #b6d3f2', padding: '0.875rem', borderRadius: '12px', color: '#174b85', fontSize: '0.85rem', fontWeight: 600, marginBottom: '1rem' }}>✓ Your request has been received. You may speak with our GP for health counseling.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.8, margin: '0 0 1.25rem 0' }}>
+                By requesting a health check-in, you agree to allow Makati Life Medical Center healthcare staff to contact you via phone call or SMS message regarding your wellness evaluation.
+              </p>
               <button className="btn-dark" onClick={handlePrimaryClick}>REQUEST HEALTH CHECK-IN</button>
               <button className="btn-secondary" onClick={onRestart}>FINISH</button>
             </div>
@@ -57,18 +65,21 @@ export default function ResultScreen({ result, onRestart, onRequestFollowUp }) {
         </div>
       )}
 
+      {/* ROUTE B / PRE-FLIGHT ADVISORY */}
       {isRouteB && (
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: '56px', height: '56px', background: '#fffbeb', color: '#d97706', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', margin: '0 auto 1rem auto' }}>🛡️</div>
           <span style={{ background: '#fffbeb', color: '#d97706', padding: '0.25rem 0.75rem', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 800 }}>PRE-FLIGHT ADVISORY</span>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.75rem 0 0.5rem 0' }}>Fit-to-Fly Health Assessment is Recommended!</h2>
-          <p style={{ color: '#475569', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: '0.5rem' }}>"A few of your wellness habits may benefit from extra attention. A quick check-in could help you prepare for a healthier journey."</p>
-          <p style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: '1.5rem' }}>"Want guidance on preventive check-ups or specialist consultations? We can help."</p>
+          <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0.75rem 0 1.5rem 0' }}>Pre-Flight Wellness Check Recommended!</h2>
+          
 
           {requested ? (
             <div style={{ background: '#eef4fc', border: '1px solid #b6d3f2', padding: '0.875rem', borderRadius: '12px', color: '#174b85', fontSize: '0.85rem', fontWeight: 600, marginBottom: '1rem' }}>✓ Request acknowledgment recorded. Our team will assist shortly.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.8, margin: '0 0 1.25rem 0' }}>
+                By connecting with us, you agree to receive follow-up phone calls or messages from Makati Life Medical Center regarding guidance, preventive check-ups, and specialist consultations.
+              </p>
               <button className="btn-dark" onClick={handlePrimaryClick}>CONNECT WITH MAKATI LIFE</button>
               <button className="btn-secondary" onClick={onRestart}>FINISH</button>
             </div>
@@ -76,15 +87,37 @@ export default function ResultScreen({ result, onRestart, onRequestFollowUp }) {
         </div>
       )}
 
+      {/* ROUTE C / READY TO FLY (FIT TO FLY) */}
       {(isRouteC || (!isRouteA && !isRouteB)) && (
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: '56px', height: '56px', background: '#eef4fc', color: '#174b85', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', margin: '0 auto 1rem auto' }}>🌟</div>
           <span style={{ background: '#eef4fc', color: '#174b85', padding: '0.25rem 0.75rem', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 800 }}>READY TO FLY</span>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.75rem 0 0.5rem 0' }}>Ready for Your Wellness Journey!</h2>
-          <p style={{ color: '#475569', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>"You're showing positive wellness habits. Keep making your health a priority wherever your journey takes you."</p>
+          <h2 style={{ fontSize: '1.55rem', fontWeight: 800, margin: '1.75rem 0 1rem 0' }}>Ready for Your Wellness Journey!</h2>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <button className="btn-dark" onClick={() => setInfoModal("Our concierge will connect with you to explore wellness packages.")}>EXPLORE WELLNESS SERVICES</button>
+            {/* FACEBOOK PAGE LINK BUTTON */}
+            <a 
+              href="https://www.facebook.com/MakatiLifeMedicalCenter" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ 
+                background: '#1877f2', 
+                color: '#ffffff', 
+                padding: '0.75rem 1rem', 
+                borderRadius: '8px', 
+                fontSize: '0.85rem', 
+                fontWeight: 700, 
+                textDecoration: 'none', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '0.5rem',
+                boxShadow: '0 2px 4px rgba(24, 119, 242, 0.2)'
+              }}
+            >
+              👍 Like our Facebook Page
+            </a>
+
             <button className="btn-secondary" onClick={onRestart}>FINISH</button>
           </div>
         </div>
