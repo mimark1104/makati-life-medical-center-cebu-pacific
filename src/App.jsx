@@ -139,7 +139,16 @@ export default function App() {
   const isDashboardView = view === 'dashboard';
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      height: isDashboardView ? 'auto' : '100dvh', // Prevents mobile viewport expansion on assessment/result
+      display: 'flex', 
+      flexDirection: 'column', 
+      background: '#f8fafc',
+      overflow: isDashboardView ? 'visible' : 'hidden', // Locks page scrolling on form views
+      position: isDashboardView ? 'static' : 'fixed',
+      inset: 0
+    }}>
       
       {/* NAVBAR ONLY SHOWS ON DASHBOARD VIEW */}
       {isDashboardView && <Navbar onRestart={restartAssessment} />}
@@ -153,18 +162,23 @@ export default function App() {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center', // Centers vertically
-        alignItems: 'center'      // Centers horizontally
+        alignItems: 'center',      // Centers horizontally
+        boxSizing: 'border-box'
       }}>
         {view === 'assessment' && (
-          <AssessmentForm onComplete={handleAssessmentComplete} />
+          <div style={{ width: '100%', maxWidth: '420px' }}>
+            <AssessmentForm onComplete={handleAssessmentComplete} />
+          </div>
         )}
 
         {view === 'result' && currentResult && (
-          <ResultScreen 
-            result={currentResult} 
-            onRestart={restartAssessment}
-            onRequestFollowUp={handleFollowUpRequest}
-          />
+          <div style={{ width: '100%', maxWidth: '420px' }}>
+            <ResultScreen 
+              result={currentResult} 
+              onRestart={restartAssessment}
+              onRequestFollowUp={handleFollowUpRequest}
+            />
+          </div>
         )}
 
         {view === 'auth' && (

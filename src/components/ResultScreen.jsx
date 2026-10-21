@@ -1,13 +1,29 @@
 import React, { useState } from 'react';
 
 export default function ResultScreen({ result, onRestart, onRequestFollowUp }) {
-  const [requested, setRequested] = useState(result.requestedFollowUp);
+  if (!result) {
+    return (
+      <div style={{ background: '#fff', borderRadius: '20px', padding: '2rem', textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+        <p style={{ color: '#64748b', fontSize: '0.875rem', fontWeight: 600 }}>Loading wellness evaluation...</p>
+      </div>
+    );
+  }
+
+  const [requested, setRequested] = useState(result?.requestedFollowUp || false);
   const [infoModal, setInfoModal] = useState(null);
 
   const handlePrimaryClick = () => {
     setRequested(true);
-    onRequestFollowUp(result.id);
+    if (typeof onRequestFollowUp === 'function') {
+      onRequestFollowUp(result.id);
+    }
   };
+
+  // Support both routing engine route names and legacy ROUTE_A/B/C
+  const route = result?.route;
+  const isRouteA = route === 'ROUTE_A' || route === 'PRIORITY_ASSIST';
+  const isRouteB = route === 'ROUTE_B' || route === 'GENTLE_CARE';
+  const isRouteC = route === 'ROUTE_C' || route === 'FIT_TO_FLY';
 
   return (
     <div style={{ background: '#fff', borderRadius: '20px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', position: 'relative' }}>
@@ -23,7 +39,7 @@ export default function ResultScreen({ result, onRestart, onRequestFollowUp }) {
         </div>
       )}
 
-      {result.route === 'ROUTE_A' && (
+      {isRouteA && (
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: '56px', height: '56px', background: '#fef2f2', color: '#dc2626', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', margin: '0 auto 1rem auto' }}>🩺</div>
           <span style={{ background: '#fef2f2', color: '#dc2626', padding: '0.25rem 0.75rem', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 800 }}>PRIORITY CHECK-IN</span>
@@ -41,7 +57,7 @@ export default function ResultScreen({ result, onRestart, onRequestFollowUp }) {
         </div>
       )}
 
-      {result.route === 'ROUTE_B' && (
+      {isRouteB && (
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: '56px', height: '56px', background: '#fffbeb', color: '#d97706', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', margin: '0 auto 1rem auto' }}>🛡️</div>
           <span style={{ background: '#fffbeb', color: '#d97706', padding: '0.25rem 0.75rem', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 800 }}>PRE-FLIGHT ADVISORY</span>
@@ -60,7 +76,7 @@ export default function ResultScreen({ result, onRestart, onRequestFollowUp }) {
         </div>
       )}
 
-      {result.route === 'ROUTE_C' && (
+      {(isRouteC || (!isRouteA && !isRouteB)) && (
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: '56px', height: '56px', background: '#eef4fc', color: '#174b85', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', margin: '0 auto 1rem auto' }}>🌟</div>
           <span style={{ background: '#eef4fc', color: '#174b85', padding: '0.25rem 0.75rem', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 800 }}>READY TO FLY</span>
