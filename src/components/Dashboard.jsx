@@ -15,31 +15,55 @@ export default function Dashboard({ submissions = [], onExit }) {
     setLocalSubmissions(submissions);
   }, [submissions]);
 
-  // Question mapping helper to format raw JSON answers into human-readable text
+  // Question mapping including both the title and descriptive subtext sentence
   const questionMap = {
     q1: {
-      title: "1. How often do you feel fatigued during daily activities?",
-      options: { 0: "Rarely / Never", 1: "Sometimes", 2: "Frequently" }
+      title: "1. How would you describe your daily eating and hydration habits?",
+      options: { 
+        0: { title: "Balanced & Hydrated", text: "I eat balanced meals regularly and stay adequately hydrated." }, 
+        1: { title: "Occasional Skips / High Caffeine", text: "I occasionally skip meals or rely heavily on coffee to get through the day." }, 
+        2: { title: "Frequent Fatigue / Irregular Meals", text: "I frequently experience fatigue or digestive discomfort, or struggle to maintain regular meals." } 
+      }
     },
     q2: {
-      title: "2. Do you experience joint discomfort or muscle stiffness when travelling?",
-      options: { 0: "No discomfort", 1: "Mild stiffness", 2: "Significant pain" }
+      title: "2. How active do you feel throughout your day?",
+      options: { 
+        0: { title: "Regularly Active", text: "I exercise regularly and generally feel energetic." }, 
+        1: { title: "Seldom Exercise", text: "I seldom do exercises." }, 
+        2: { title: "Minimal Activity & Breathlessness", text: "I have minimal physical activity and often get tired or short of breath with ordinary exertion." } 
+      }
     },
     q3: {
-      title: "3. How would you rate your daily hydration and nutrition habits?",
-      options: { 0: "Balanced & Hydrated", 1: "Needs Improvement", 2: "Poor / Irregular" }
+      title: "3. How well are you managing your sleep and stress?",
+      options: { 
+        0: { title: "Restful Sleep & Well-Managed Stress", text: "I usually get enough restful sleep and manage stress well." }, 
+        1: { title: "Occasional Fatigue / Stress", text: "I sometimes experience insufficient sleep, stress, or difficulty concentrating." }, 
+        2: { title: "Exhausted & Severe Stress", text: "I frequently wake up exhausted or experience significant stress that affects my daily activities." } 
+      }
     },
     q4: {
-      title: "4. Do you have any existing medical conditions or take daily medication?",
-      options: { 0: "None / Fully Managed", 1: "Under Routine Care", 2: "Requires Active Assistance" }
+      title: "4. When was your last routine health check-up?",
+      options: { 
+        0: { title: "Recent Check-Up", text: "Within the past 12 months." }, 
+        1: { title: "1 to 2 Years Ago", text: "More than 12 months ago but within the past 2 years." }, 
+        2: { title: "Over 2 Years / Unsure", text: "More than 2 years ago, or I cannot remember." } 
+      }
     }
   };
 
   const formatAnswerText = (key, val) => {
     const question = questionMap[key];
-    if (!question) return { title: `Question (${key})`, answer: `Choice ${val}` };
-    const optionText = question.options[val] !== undefined ? question.options[val] : `Option ${val}`;
-    return { title: question.title, answer: optionText };
+    if (!question) return { title: `Question (${key})`, answerTitle: `Choice ${val}`, answerSubtext: '', fullAnswer: `Choice ${val}` };
+    
+    const option = question.options[val];
+    if (!option) return { title: question.title, answerTitle: `Option ${val}`, answerSubtext: '', fullAnswer: `Option ${val}` };
+
+    return { 
+      title: question.title, 
+      answerTitle: option.title,
+      answerSubtext: option.text,
+      fullAnswer: `${option.title} - ${option.text}`
+    };
   };
 
   const totalSubmissions = localSubmissions.length;
@@ -132,7 +156,6 @@ export default function Dashboard({ submissions = [], onExit }) {
       return;
     }
 
-    // Explicit full-sentence question column headers
     const headers = [
       'ID', 
       'Date & Time', 
@@ -152,10 +175,10 @@ export default function Dashboard({ submissions = [], onExit }) {
       const isTrue = s.requestedFollowUp === 'YES' || s.requestedFollowUp === true || s.requested_follow_up === true || s.requested_follow_up === 'true';
       
       const answers = s.answers || {};
-      const q1Formatted = formatAnswerText('q1', answers.q1).answer;
-      const q2Formatted = formatAnswerText('q2', answers.q2).answer;
-      const q3Formatted = formatAnswerText('q3', answers.q3).answer;
-      const q4Formatted = formatAnswerText('q4', answers.q4).answer;
+      const q1Formatted = formatAnswerText('q1', answers.q1).fullAnswer;
+      const q2Formatted = formatAnswerText('q2', answers.q2).fullAnswer;
+      const q3Formatted = formatAnswerText('q3', answers.q3).fullAnswer;
+      const q4Formatted = formatAnswerText('q4', answers.q4).fullAnswer;
 
       return [
         `"${s.id || ''}"`,
@@ -173,10 +196,13 @@ export default function Dashboard({ submissions = [], onExit }) {
       ];
     });
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    // Prepend UTF-8 BOM (\uFEFF) so Excel properly detects UTF-8 and removes encoding artifacts like â€“
+    const csvString = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', url);
     link.setAttribute('download', `wellness_census_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
@@ -453,8 +479,13 @@ export default function Dashboard({ submissions = [], onExit }) {
                             {formatted.title}
                           </div>
                           <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#1e40af' }}>
-                            → {formatted.answer}
+                            → {formatted.answerTitle}
                           </div>
+                          {formatted.answerSubtext && (
+                            <div style={{ fontSize: '0.725rem', color: '#64748b', marginTop: '0.15rem', fontStyle: 'italic' }}>
+                              "{formatted.answerSubtext}"
+                            </div>
+                          )}
                         </div>
                       );
                     })}

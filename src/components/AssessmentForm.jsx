@@ -20,6 +20,17 @@ export default function AssessmentForm({ onComplete }) {
   const showAlert = (msg) => setModalMessage(msg);
   const closeModal = () => setModalMessage(null);
 
+  // Validation helpers for Philippine context
+  const validatePHPhone = (num) => {
+    const phPhoneRegex = /^(09|\+639)\d{9}$/;
+    return phPhoneRegex.test(num.trim().replace(/\s+/g, ''));
+  };
+
+  const validateEmail = (mail) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(mail.trim());
+  };
+
   const handleOptionSelect = (qId, score) => {
     setAnswers(prev => ({ ...prev, [qId]: score }));
   };
@@ -45,14 +56,12 @@ export default function AssessmentForm({ onComplete }) {
         showAlert("Please fill in your Full Name, Email address, and Mobile Number.");
         return;
       }
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailPattern.test(participant.email)) {
-        showAlert("Please enter a valid email address.");
+      if (!validateEmail(participant.email)) {
+        showAlert("Please enter a valid email address (e.g., user@domain.com).");
         return;
       }
-      const phonePattern = /^[0-9+\-\s()]{7,15}$/;
-      if (!phonePattern.test(participant.phone)) {
-        showAlert("Please enter a valid mobile number.");
+      if (!validatePHPhone(participant.phone)) {
+        showAlert("Please enter a valid Philippine mobile number starting with 09 or +639 (11 digits).");
         return;
       }
     } else {
@@ -84,9 +93,9 @@ export default function AssessmentForm({ onComplete }) {
     const evaluation = evaluateAssessment(answers);
     const newRecord = {
       id: `SUB-${Math.floor(1000 + Math.random() * 9000)}`,
-      name: participant.name,
-      email: participant.email,
-      phone: participant.phone,
+      name: participant.name.trim(),
+      email: participant.email.trim().toLowerCase(),
+      phone: participant.phone.trim(),
       privacyConsent: true,
       date: new Date().toISOString().replace('T', ' ').substring(0, 16),
       ...evaluation,
@@ -233,7 +242,6 @@ export default function AssessmentForm({ onComplete }) {
 
             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                {/* <span style={{ fontSize: '1.1rem' }}>🔒</span> */}
                 <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a', letterSpacing: '0.03em' }}>DATA PRIVACY NOTICE (R.A. 10173)</span>
               </div>
               <p style={{ fontSize: '0.78rem', color: '#475569', lineHeight: '1.5', marginBottom: '1rem' }}>
@@ -268,8 +276,8 @@ export default function AssessmentForm({ onComplete }) {
                 <input type="email" placeholder="e.g. jdc@example.com" value={participant.email} onChange={e => setParticipant({ ...participant, email: e.target.value })} style={{ width: '100%', padding: '0.875rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', fontSize: '0.95rem', outline: 'none' }} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem' }}>MOBILE NUMBER <span style={{ color: '#dc2626' }}>*</span></label>
-                <input type="tel" placeholder="e.g. +63 912 345 6789" value={participant.phone} onChange={e => setParticipant({ ...participant, phone: e.target.value })} style={{ width: '100%', padding: '0.875rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', fontSize: '0.95rem', outline: 'none' }} />
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem' }}>MOBILE NUMBER (PH) <span style={{ color: '#dc2626' }}>*</span></label>
+                <input type="tel" placeholder="e.g. 09171234567 or +639171234567" maxLength={13} value={participant.phone} onChange={e => setParticipant({ ...participant, phone: e.target.value })} style={{ width: '100%', padding: '0.875rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', fontSize: '0.95rem', outline: 'none' }} />
               </div>
             </div>
           </div>
