@@ -97,7 +97,7 @@ export default function ResultScreen({ result, onRestart, onRequestFollowUp }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
             {/* FACEBOOK PAGE LINK BUTTON */}
             <a 
-              href="https://www.facebook.com/MakatiLifeMedicalCenter" 
+              href="https://www.facebook.com/makatilife.official" 
               target="_blank" 
               rel="noopener noreferrer"
               style={{ 
