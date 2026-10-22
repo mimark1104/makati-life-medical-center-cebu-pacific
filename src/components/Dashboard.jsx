@@ -132,9 +132,31 @@ export default function Dashboard({ submissions = [], onExit }) {
       return;
     }
 
-    const headers = ['ID', 'Date & Time', 'Name', 'Email', 'Phone', 'Consent', 'Triage Status', 'Follow-Up Requested'];
+    // Explicit full-sentence question column headers
+    const headers = [
+      'ID', 
+      'Date & Time', 
+      'Name', 
+      'Email', 
+      'Phone', 
+      'Consent', 
+      'Triage Status', 
+      'Follow-Up Requested',
+      `"${questionMap.q1.title}"`,
+      `"${questionMap.q2.title}"`,
+      `"${questionMap.q3.title}"`,
+      `"${questionMap.q4.title}"`
+    ];
+
     const rows = filteredSubmissions.map(s => {
       const isTrue = s.requestedFollowUp === 'YES' || s.requestedFollowUp === true || s.requested_follow_up === true || s.requested_follow_up === 'true';
+      
+      const answers = s.answers || {};
+      const q1Formatted = formatAnswerText('q1', answers.q1).answer;
+      const q2Formatted = formatAnswerText('q2', answers.q2).answer;
+      const q3Formatted = formatAnswerText('q3', answers.q3).answer;
+      const q4Formatted = formatAnswerText('q4', answers.q4).answer;
+
       return [
         `"${s.id || ''}"`,
         `"${s.date || ''}"`,
@@ -143,7 +165,11 @@ export default function Dashboard({ submissions = [], onExit }) {
         `"${s.phone || ''}"`,
         `"${s.privacyConsent ? 'RA 10173 Agreed' : 'No'}"`,
         `"${getTriageDisplay(s.route)}"`,
-        `"${isTrue ? 'YES' : 'NO'}"`
+        `"${isTrue ? 'YES' : 'NO'}"`,
+        `"${q1Formatted}"`,
+        `"${q2Formatted}"`,
+        `"${q3Formatted}"`,
+        `"${q4Formatted}"`
       ];
     });
 
@@ -396,7 +422,7 @@ export default function Dashboard({ submissions = [], onExit }) {
         </div>
       </div>
 
-      {/* DETAIL MODAL WITH HUMAN READABLE RESPONSES */}
+      {/* DETAIL MODAL */}
       {selectedSubmission && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', zIndex: 200 }}>
           <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.5rem', maxWidth: '480px', width: '100%', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', maxHeight: '85vh', overflowY: 'auto' }}>
